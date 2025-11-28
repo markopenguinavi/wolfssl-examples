@@ -392,7 +392,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "ERROR: Failed to initialize the library\n");
         goto socket_cleanup;
     }
-
     /* Create and initialize Client WOLFSSL_CTX */
 #ifdef USE_TLSV13
     ctx = wolfSSL_CTX_new(wolfTLSv1_3_client_method());
@@ -403,6 +402,15 @@ int main(int argc, char *argv[])
         fprintf(stderr, "ERROR: failed to create WOLFSSL_CTX\n");
         goto socket_cleanup;
     }
+
+    /* Load client certificates into WOLFSSL_CTX */
+    if ((ret = wolfSSL_CTX_load_verify_locations(ctx, CERT_FILE, NULL))
+         != WOLFSSL_SUCCESS) {
+        fprintf(stderr, "ERROR: failed to load %s, please check the file.\n",
+                CERT_FILE);
+        goto ctx_cleanup;
+    }
+
     printf("Initialized SSL CLient\n");
     /* Main loop */
     while (select_all_fds() >= 0) {
@@ -411,6 +419,7 @@ int main(int argc, char *argv[])
     /* Cleanup and return */
     for (x=0; x<MAX_INSTANCE; x++)
         close_instance(x);
+ctx_cleanup:
     wolfSSL_CTX_free(ctx);  /* Free the wolfSSL context object          */
     wolfSSL_Cleanup();      /* Cleanup the wolfSSL environment          */
 socket_cleanup:
